@@ -1,0 +1,27 @@
+<div id="chat-window-template" class="chat-window movableChatWindow" style="height: 563px; width: 489px; min-height: 128px; min-width: 128px;">
+<div>
+  <div class="chat-window-header"><span class="chat-window-title"></span> <span class="close-button"><i class="fas fa-times"></i></span></div>
+  <div class="window-content"><div class="chat-content"></div></div>
+  <div class="chat-window-footer" style="text-align: center;">
+  <textarea type="text" class="chat-input" style="width: 80%; text-align: left;" placeholder="Olá, mundo!"></textarea>
+  <div class="misc-buttons">
+  <i class="fas fa-bell nudge"></i> <form enctype="multipart/form-data" style="display: inline;"><i class="fas fa-upload upload"></i><input accept="image/x-png,image/gif,image/jpeg" type="file" class="file1" name="upload" style="position: fixed; top: -1000px;" ></form>
+  </div>
+  </div>
+</div>
+</div>
+<div id="chat-window-message">
+<div class="message-avatar-wrapper" style="width: 40px; float: left;">
+<img class="message-avatar" style="width: 40px; height: 40px; border-radius: 999999px;">
+</div>
+<div class="message-content-wrapper" style="float: right; width: calc(100% - 40px);">
+<div><span class="message-author" style="font-weight: 600;"></span> <span class="message-date"></span></div>
+<div class="message-content"></div>
+</div>
+<br style="clear: both" /> <!-- So dirty! -->
+<hr>
+</div>
+<div id="chat-window-special-action">
+<div class="special-action" style="text-align: center;"><span class="special-action-symbol"></span><span class="special-action-content"></span></div>
+<hr>
+</div>

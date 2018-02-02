@@ -1,0 +1,520 @@
+{% extends 'base.html' %}
+{% block appcontent %}
+<script>
+function sendJsonToServer(url, content, callback) {
+	console.log("Sending...")
+	console.log(content);
+		
+	// construct an HTTP request
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+
+	// send the collected data as JSON
+	if (content != null) {
+		xhr.send(content);
+	} else {
+		xhr.send();
+	}
+
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState == XMLHttpRequest.DONE) {
+			console.log(xhr.responseText);
+			if (callback != null) {
+				callback(xhr.responseText)
+			}
+		}
+	}
+}
+
+function openLoginModal() {
+	
+    var modal = new tingle.modal({
+        closeMethods: [],
+        footer: true
+		});
+		
+
+    modal.addFooterBtn('Entrar', "button-discord button-discord-info pure-button button-discord-modal", function(){
+		$(".tingle-modal--visible .username").prop('disabled', true);
+		$(".tingle-modal--visible .password").prop('disabled', true);
+		var username = $(".tingle-modal--visible .username").val()
+		var password = $(".tingle-modal--visible .password").val()
+		sendJsonToServer("{{ contentUrl }}api/v1/auth/login?login=" + username + "&password=" + password, null, function(response) {
+			$(".tingle-modal--visible .username").prop('disabled', false);
+			$(".tingle-modal--visible .password").prop('disabled', false);
+			var obj = JSON.parse(response);
+			
+			if (obj["api:message"] == "OK") {
+				location.reload();
+			}
+		});
+    });
+    modal.addFooterBtn(forceLogin ? 'Voltar a página inicial' : 'Fechar', "button-discord button-discord-info pure-button button-discord-modal-secondary-action", function(){	
+		if (forceLogin) {
+			window.location.href = "{{ contentUrl }}";
+		} else {
+			modal.close();
+		}
+    });
+	
+	var cloned = $(".login-modal").clone()
+	
+    modal.setContent(cloned.html());
+	modal.open();
+	$(".tingle-modal--visible").children().css("width", "350px")
+	$(".tingle-modal--visible .loritta-password").addClass("animated slideInUp")
+}
+
+function getRandomString(size) {
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+  for (var i = 0; i < size; i++)
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+
+  return text;
+}
+
+function applyChanges(obj, classes, delay) {
+	setTimeout(function(){
+		obj.removeClass("is-invisible");
+		obj.addClass("animated " + classes);
+	}, delay);
+}
+
+/* var y = -1000
+var myInterval = setInterval(function() {
+	$( "body" ).css("background-position", "0px " + y + "px");
+	y--
+}, 125); */
+
+$(document).ready(function() {
+$("#myFakeTopnav").css("height", $("#myTopnav").height())
+
+showJoinedCommunities()
+})
+
+function cleanUp() {
+$("#wrapper").css("filter", "blur(7px)");
+$("#loading-screen").fadeIn(250)
+}
+
+function showContent() {
+$("#wrapper").empty()
+$("#wrapper").append($("#content-buffer").html());
+$("#content-buffer").empty()
+$("#wrapper").css("filter", "");
+$("#loading-screen").fadeOut(250)
+}
+
+function showLoadingBar() {
+$("#wrapper").css("filter", "blur(7px)");
+$("#loading-screen").fadeIn(250)
+}
+
+function hideLoadingBar() {
+$("#wrapper").css("filter", "");
+$("#loading-screen").fadeOut(250)
+}
+
+function showJoinedCommunities() {
+cleanUp()
+$("#content-buffer").append(jQuery('<div/>', {
+	id: "content"
+}))
+$("#content-buffer #content").append(jQuery('<div/>', {
+    'class': 'pure-g vertically-centered-content',
+	id: "pure-g-wrapper-wow"
+}))
+$.getJSON( "{{ contentUrl }}api/v1/community/joined?start=0&size=200", function( data ) {
+	var communityList = data["communityList"]
+	
+	var ndcIds = []
+	
+	$.each(communityList, function(i, item) {		
+		var template = $("#select-community-entry-template").clone()
+		template.attr("id", "community-entry-" + item["ndcId"])
+		ndcIds.push(item["ndcId"])
+		template.find(".community-icon").attr("src", item["icon"])
+		template.find(".community-name").text(item["name"])
+		template.find(".community-users-text").text(item["membersCount"] + " membros")
+		template.find(".community-tagline").text(item["tagline"])
+		console.log(item["tagline"])
+		
+		if (item["launchPage"] != null && item["launchPage"]["mediaList"] != null) {
+			var aaa = item["launchPage"]["mediaList"]["medias"][Math.floor(Math.random() * item["launchPage"]["mediaList"]["medias"].length)]
+			
+			template.find(".select-community-cover").css("background-image", "url(" + aaa["imageUrl"] + ")")
+			console.log(item["launchPage"]["mediaList"]["medias"][0].imageUrl)
+		} else if (item["promotionalMediaList"] != null) {
+			var aaa = item["promotionalMediaList"]["medias"][Math.floor(Math.random() * item["promotionalMediaList"]["medias"].length)]
+			
+			template.find(".select-community-cover").css("background-image", "url(" + aaa["imageUrl"] + ")")
+		}
+		
+		template.find(".select-community-cover").css("background-color", item["themePack"]["themeColor"])
+		
+		template.find(".community-open-button").attr("onclick", "openCommunity('" + item["ndcId"] + "');")
+		template.appendTo($("#content-buffer #pure-g-wrapper-wow"))
+		
+	});
+	
+		$.getJSON( "{{ contentUrl }}api/v1/reminder/check?timezone=-180&ndcIds=" + ndcIds.join(), function( reminders ) {
+			var maxCount = 0;
+			$.each(ndcIds, function( index, value ) {
+				console.log(value)
+				if (reminders[value] != null) {
+					maxCount++;
+				}
+				if (reminders[value] != null && reminders[value]["notificationsCount"] != 0) {
+					console.log("notif: " + reminders[value]["notificationsCount"])
+					console.log($("#content-buffer #community-entry-" + value))
+					$("#content-buffer #community-entry-" + value).find(".community-notifications").parent().attr("class", "")
+					$("#content-buffer #community-entry-" + value).find(".community-notifications").text(reminders[value]["notificationsCount"])
+				}
+			});
+			
+			console.log("Loaded " + ndcIds.length + " communities");
+			console.log("Max notif count: " + maxCount);
+			$("#myTopnav").css("background-color", "")
+			showContent()
+		});
+});
+}
+
+function shadeColor2(color, percent) {   
+    var f=parseInt(color.slice(1),16),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=f>>16,G=f>>8&0x00FF,B=f&0x0000FF;
+    return "#"+(0x1000000+(Math.round((t-R)*p)+R)*0x10000+(Math.round((t-G)*p)+G)*0x100+(Math.round((t-B)*p)+B)).toString(16).slice(1);
+}
+
+function openCommunity(ndcId) {
+	// insertAdvertisement($("#teeest"))
+	cleanUp()
+	$.getJSON( "{{ contentUrl }}api/v1/s-x" + ndcId + "/community/info", function( data ) {
+		var template = $("#community-info-template").clone()
+		template.find(".community-name").text(data["community"]["name"])
+		template.find(".community-icon").attr("src", data["community"]["icon"])
+		$("#content-buffer").append(template)
+		var hexColor = data["community"]["themePack"]["themeColor"]
+		$("#myTopnav").css("background-color", hexColor)
+		$("#content-buffer #left-sidebar").css("background-color", shadeColor2(hexColor, -0.1))
+
+		$("#content-buffer #left-sidebar .community-public-chats-button").attr("onclick", "loadPublicChats('" + ndcId + "');")
+		$.getJSON( "{{ contentUrl }}api/v1/reminder/check?timezone=-180&ndcIds=" + ndcId, function( reminders ) {
+			if (reminders[ndcId]["hasCheckInToday"] == false) {
+				$("#content-buffer #left-sidebar .community-check-in-button").addClass("button-discord-success")
+				$("#content-buffer #left-sidebar .community-check-in-button").attr("onclick", "checkIn('" + ndcId + "');")
+			} else {
+				$("#content-buffer #left-sidebar .community-check-in-button").addClass("button-discord-disabled")
+			}
+			
+			showContent()			
+		});
+	});
+}
+
+function checkIn(ndcId) {
+	$.getJSON( "{{ contentUrl }}api/v1/x" + ndcId + "/s/check-in", function( data ) {
+		console.log(data)
+		$("#left-sidebar .community-check-in-button").removeClass("button-discord-success")
+		$("#left-sidebar .community-check-in-button").addClass("button-discord-disabled")
+	})
+}
+
+function loadPublicChats(ndcId) {
+	showLoadingBar();
+	
+	$.getJSON( "{{ contentUrl }}api/v1/x" + ndcId + "/s/get-public-chats?start=0&size=25", function( data ) {
+		console.log(data)
+		
+		$("#content-buffer").append(jQuery('<div/>', {
+			id: "content"
+		}))
+		$("#content-buffer #content").append(jQuery('<div/>', {
+			'class': 'pure-g vertically-centered-content',
+			id: "pure-g-wrapper-wow"
+		}))
+		
+		function addThread(item) {
+			var template = $("#select-chat-entry-template").clone()
+			template.attr("id", "community-chat-" + item["threadId"])
+			template.css("background-size", "cover")
+			template.find(".select-community-cover").css("background-image", "url(" + item["icon"] + ")")
+			template.find(".community-name").text(item["title"])
+			template.find(".community-tagline").text(item["keywords"])
+			template.find(".community-users-text").text(item["membersCount"] + "/" + item["membersQuota"] + " membros")
+			template.find(".community-open-button").attr("onclick", "openChat('" + item["threadId"] + "', this)")
+			template.find(".community-open-button").attr("data-chat-title", item["title"])
+			template.find(".community-open-button").attr("data-ndc-id", ndcId)
+			template.appendTo($("#content-buffer #pure-g-wrapper-wow"))
+			console.log("adding thread...")
+		}
+		
+		$.each(data["recommendedThreadList"], function( index, value ) {
+			addThread(value)
+		})
+		
+		$.each(data["threadList"], function( index, value ) {
+			addThread(value)
+		})
+		
+		$("#right-sidebar").empty()
+		$("#right-sidebar").append($("#content-buffer").html())
+		$("#content-buffer").empty()
+		hideLoadingBar();
+	})
+}
+
+function openChat(threadId, _element) {
+	var element = $(_element)
+	var template = $("#chat-window-template").clone()
+	template.attr("id", "chat-" + threadId);
+	template.find(".chat-window-title").text(element.attr("data-chat-title"))
+	template.find(".chat-window-header").css("background-color", $("#myTopnav").css("background-color"))
+	$("body").append(template)
+	template.find(".window-content").css("height", 563 - $("#chat-" + threadId).find(".chat-window-header").height() - $("#chat-" + threadId).find(".chat-window-footer").height())
+	$("#chat-" + threadId).resizable({handles: 'n, e, s, w, se, ne, sw, nw', resize : function (e, ui) {
+		template.find(".window-content").css("height", ui.size.height - $("#chat-" + threadId).find(".chat-window-header").height() - $("#chat-" + threadId).find(".chat-window-footer").height())
+	}})
+	$("#chat-" + threadId).draggable({handle: ".chat-window-header"})
+	
+	var lastCheck = moment().utc().format()
+	
+	var task = setInterval(
+		function(){
+			$.getJSON( "{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message?start=0&size=25&starttime=" + lastCheck, function( data ) {
+				lastCheck = moment().utc().format()
+				console.log(data)
+		
+				data.reverse()
+		
+				$.each(data, function( index, value ) {
+					console.log(value)
+					if (template.find(".chat-content").find('[data-message-id="' + value["messageId"] + '"]').length == 0) {
+						if (value["content"] != null) {
+							if (value["content"].includes(":nudge:")) {
+								// if contains :nudge:, then it is a nudge action, so let's play the nudge notif sound
+								var chatmessage = $("#chat-window-special-action").clone()
+								chatmessage.attr("data-message-id", value["messageId"])
+								
+								chatmessage.find(".special-action-symbol").html('<i style="color: rgb(67, 181, 129)" class="fas fa-bell"></i> ')
+								chatmessage.find(".special-action-content").text(value["author"]["nickname"] + " acabou de chamar a sua atenção")
+								
+								template.find(".chat-content").append(chatmessage)
+								var audio = new Audio('{{ contentUrl }}assets/snd/nudge.mp3');
+								audio.play();
+								
+								template.addClass("shake shake-constant")
+								setTimeout(
+									function() {
+									  template.removeClass("shake shake-constant")
+								}, 800);
+								return;
+							}
+						}
+						template.find(".chat-content").append(createChatEntry(value))
+						var audio = new Audio('{{ contentUrl }}assets/snd/tone.mp3');
+						audio.play();
+					}
+						
+				})
+		
+			$("#chat-" + threadId).find(".chat-content").scrollTop($("#chat-" + threadId).find(".chat-content").get(0).scrollHeight)
+			})
+		}
+	, 1000);
+	
+	template.find(".close-button").click(function() {
+	  template.remove()
+	  clearInterval(task)
+	});
+	
+	template.find(".nudge").click(function() {
+		$.post("{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message", { "content" : ":nudge:" }, function(response) {
+			template.find(".chat-content").append(createChatEntry(response))
+		}, 'json');
+	});
+	
+	template.find(".upload").click(function() {
+		/* $.post("{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message", { "content" : ":nudge:" }, function(response) {
+			template.find(".chat-content").append(createChatEntry(response))
+		}, 'json'); */
+		template.find(".file1").click()
+	});
+
+    template.find(".file1").change(function (){
+		console.log("changed!")
+		$.ajax({
+			// Your server script to process the upload
+			url: "{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message",
+			type: 'POST',
+
+			// Form data
+			data: new FormData(template.find("form")[0]),
+
+			// Tell jQuery not to process data or worry about content-type
+			// You *must* include these options!
+			cache: false,
+			contentType: false,
+			processData: false,
+
+			// Custom XMLHttpRequest
+			xhr: function() {		
+				var myXhr = $.ajaxSettings.xhr();
+				if (myXhr.upload) {
+					myXhr.addEventListener("load", function () {
+						console.log("Finished uploading!");
+					}, false);
+				}
+				
+				myXhr.responseType = 'blob';
+				myXhr.onreadystatechange = function() {
+					if (myXhr.readyState == XMLHttpRequest.DONE) {
+						console.log("ready!!!");
+					}
+				}
+				
+				return myXhr;
+			},
+		});
+     });
+	
+	template.find(".chat-input").keypress(function (e) {
+        var code = (e.keyCode ? e.keyCode : e.which);
+        if (!e.shiftKey && code == 13) {
+			e.preventDefault()
+			var content = template.find(".chat-input").val()
+			template.find(".chat-input").val("")
+			
+			$.post("{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message", { "content" : content }, function(response) {
+				template.find(".chat-content").append(createChatEntry(response))
+			}, 'json');
+            return true;
+        }
+    });
+	
+	$.getJSON( "{{ contentUrl }}api/v1/x" + element.attr("data-ndc-id") + "/s/chat/thread/" + threadId + "/message?start=0&size=25", function( data ) {
+		console.log(data)
+		
+		data.reverse()
+		
+		$.each(data, function( index, value ) {
+			console.log(value)
+			template.find(".chat-content").append(createChatEntry(value))
+		})
+		
+		$("#chat-" + threadId).find(".chat-content").scrollTop($("#chat-" + threadId).find(".chat-content").get(0).scrollHeight)
+	})
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(find, 'g'), replace);
+}
+
+var entityMap = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+  '/': '&#x2F;',
+  '`': '&#x60;',
+  '=': '&#x3D;'
+};
+
+function escapeHtml (string) {
+  return String(string).replace(/[&<>"'`=\/]/g, function (s) {
+    return entityMap[s];
+  });
+}
+
+function createChatEntry(value) {
+			if (value["type"] == 0 || value["type"] == 2) {
+				var chatmessage = $("#chat-window-message").clone()
+				chatmessage.attr("data-message-id", value["messageId"])
+				chatmessage.find(".message-author").text(value["author"]["nickname"])
+				
+				if (value["mediaType"] == 0) {
+					if (value["content"].includes(":nudge:")) {
+						// if contains :nudge:, then it is a nudge action, so let's play the nudge notif sound
+						var chatmessage = $("#chat-window-special-action").clone()
+						chatmessage.attr("data-message-id", value["messageId"])
+								
+						chatmessage.find(".special-action-symbol").html('<i style="color: rgb(67, 181, 129)" class="fas fa-bell"></i> ')
+						chatmessage.find(".special-action-content").text(value["author"]["nickname"] + " acabou de chamar a sua atenção")
+								
+						return chatmessage
+					}
+					chatmessage.find(".message-content").text(escapeHtml(value["content"]))
+					var sanitized = chatmessage.find(".message-content").text()
+					sanitized = replaceAll(sanitized, ":tavares:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/339905091521871882.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":RevolvingThink:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/393596204744835092.gif?v=1'>")
+					sanitized = replaceAll(sanitized, ":whatdog:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/388420518107414528.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":ata:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/339904769139146755.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":blobgift:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/404670865318608896.gif?v=1'>")
+					sanitized = replaceAll(sanitized, ":blobmention:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/385183624254717952.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":loritriste:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/370344565967814659.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":loritta:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/331179879582269451.png?v=1'>")
+					sanitized = replaceAll(sanitized, ":loritta_ayano:", "<img style='height: 28px;position: relative;top: 8px;' src='https://cdn.discordapp.com/emojis/383742012559589387.png?v=1'>")
+					chatmessage.find(".message-content").html(sanitized)
+				}
+				if (value["mediaType"] == 100) {
+					var img = $('<img />', { 
+					  src: value["mediaValue"],
+					  style: "max-width: 100%; max-height: 375px; width: auto; height: auto;"
+					});
+					chatmessage.find(".message-content").append(img)
+				}
+				if (value["mediaType"] == 110) {
+					$("<audio></audio>").attr({
+						'src':value["mediaValue"],
+						'controls':'controls'
+					}).appendTo(chatmessage.find(".message-content"));
+				}
+				
+				chatmessage.find(".message-date").text(moment(value["createdTime"]).calendar())
+				chatmessage.find(".message-avatar").attr("src", value["author"]["icon"])
+				return chatmessage
+			}
+			if (value["type"] == 101 || value["type"] == 102) {
+			var chatmessage = $("#chat-window-special-action").clone()
+			chatmessage.attr("data-message-id", value["messageId"])
+				if (value["type"] == 101) {
+					chatmessage.find(".special-action-symbol").html('<i style="color: rgb(67, 181, 129)" class="fas fa-arrow-right"></i> ')
+					chatmessage.find(".special-action-content").text(value["author"]["nickname"] + " entrou na conversa.")
+				} else if (value["type"] == 102) {
+					chatmessage.find(".special-action-symbol").html('<i style="color: rgb(181,67,67)" class="fas fa-arrow-left"></i> ')
+					chatmessage.find(".special-action-content").text(value["author"]["nickname"] + " saiu da conversa.")
+				} else {
+					chatmessage.find(".special-action-content").text(value["author"]["nickname"] + " fez ação " + value["type"])
+				}
+				return chatmessage
+			}
+}
+			
+function insertAdvertisement(element) {
+console.log(element)
+
+window.google_ad_client = "ca-pub-9989170954243288";
+window.google_ad_slot = "6236021665";
+window.data_ad_format = "auto";
+
+// container is where you want the ad to be inserted
+var container = element.get()
+var w = document.write;
+document.write = function (content) {
+    container.innerHTML = content;
+    document.write = w;
+};
+
+var script = document.createElement('script');
+script.type = 'text/javascript';
+script.src = 'http://pagead2.googlesyndication.com/pagead/show_ads.js';
+document.body.appendChild(script);
+}
+
+function notImplemented() {
+}
+</script>
+{% endblock %}

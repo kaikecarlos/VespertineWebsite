@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="x-ua-compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}{% block subtitle %}OwO whats this?{% endblock %} • Vespertine{% endblock %}</title>
+<meta name="description" content="Página inicial do Vespertine">
+<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+<script src="{{ contentUrl }}assets/js/moment-with-locales.js"></script>
+<script async src="{{ contentUrl }}assets/js/countUp.min.js"></script>
+<script async src="{{ contentUrl }}assets/js/tingle.min.js"></script>
+<link rel="stylesheet" href="//cdn.jsdelivr.net/editor/0.1.0/editor.css">
+<script src="//cdn.jsdelivr.net/editor/0.1.0/editor.js"></script>
+<script src="//cdn.jsdelivr.net/editor/0.1.0/marked.js"></script>
+<meta name="author" content="MrPowerGamerBR">
+<meta property="og:site_name" content="Website do Vespertine">
+<meta property="og:description" content="Página inicial do Vespertine">
+<meta property="og:title" content="Meu Website!">
+<meta property="og:image" content="http://loritta.website/assets/img/loritta_gabizinha_v1.png">
+<meta property="og:ttl" content="600">
+<meta property="og:image:width" content="320">
+<meta property="twitter:site" content="vespertine">
+<meta property="twitter:card" content="summary">
+<meta property="twitter:title" content="Página inicial">
+<script src="{{ contentUrl }}assets/js/three.js"></script>
+<script src="https://skinrender.ga/js/lib/OrbitControls.min.js"></script><!-- Required for interactive controls -->
+<script src="https://skinrender.ga/js/render/skin.min.js"></script>
+</head>
+<body>
+<script>
+moment.locale('pt_br');
+
+function onViewport(el, elClass, offset, callback) {
+  /*** Based on http://ejohn.org/blog/learning-from-twitter/ ***/
+  var didScroll = false;
+  var this_top;
+  var height;
+  var top;
+  
+  if(!offset) { var offset = 0; }
+ 
+  $(window).scroll(function() {
+      didScroll = true;
+  });
+ 
+  setInterval(function() {
+    if (didScroll) {
+      didScroll = false;
+      top = $(this).scrollTop();
+ 
+      $(el).each(function(i){
+        height   = $(this).height();
+		this_top = $(this).offset().top - offset - window.innerHeight + height;
+ 
+        // Scrolled within current section
+        if (top >= this_top && !$(this).hasClass(elClass)) {
+          $(this).addClass(elClass);
+ 
+          if (typeof callback == "function") callback($(this));
+        }
+      });
+    }
+  }, 100);
+}
+
+$.extend(
+{
+    redirectPost: function(location, args)
+    {
+        var form = $('<form></form>');
+        form.attr("method", "post");
+        form.attr("action", location);
+
+        $.each( args, function( key, value ) {
+            var field = $('<input></input>');
+
+            field.attr("type", "hidden");
+            field.attr("name", key);
+            field.attr("value", value);
+
+            form.append(field);
+        });
+        $(form).appendTo('body').submit();
+    }
+});
+</script>
+<div id="loading-screen" style="position: fixed;
+   top: 50%;
+   left: 50%;
+   transform: translate(-50%, -50%);
+z-index: 100000; text-align: center; {% if file != "app.html" %}opacity: 0; pointer-events: none;{% endif %}">
+<img src="{{ contentUrl }}assets/img/loritta_loading.png">
+<div>Carregando...</div>
+</div>
+<div class="topnav navbar-fixed-top" id="myTopnav">
+<div class="topnavWrapper">
+<div class="topnavLeft">
+  <a style="font-family: 'sweatyregular', cursive; text-transform: none;" class="left-border">Vespertine</a>
+  {% if isLoggedIn == true %}
+  <a href="{{ contentUrl }}"><i class="fas fa-home"></i></a>
+  <a {% if file == "app.html" %}onclick="showTrending()"{% else %}href="{{ contentUrl }}app"{% endif %}><i class="fas fa-newspaper"></i> Chamadas</a>
+  <a {% if file == "app.html" %}onclick="showJoinedCommunities()"{% else %}href="{{ contentUrl }}app"{% endif %}><i class="fas fa-th-large"></i> Meus Aminos</a>
+  <a {% if file == "app.html" %}onclick="showExplore()"{% else %}href="{{ contentUrl }}app"{% endif %}><i class="far fa-compass"></i> Explorar</a>
+  {% else %}
+  <a href="{{ contentUrl }}"><i class="fas fa-home"></i></a>
+  <a onclick="openLoginModal()"><i class="fas fa-newspaper"></i> Chamadas</a>
+  <a onclick="openLoginModal()"><i class="fas fa-th-large"></i> Meus Aminos</a>
+  <a onclick="openLoginModal()"><i class="far fa-compass"></i> Explorar</a>
+  {% endif %}
+</div>
+<div class="topnavRight">
+  <div class="rightEntries">
+    {% if username != null %}
+	<a onclick="openLoginModal()" class="left-border"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> {{ username }}</a>
+	{% else %}
+	<a onclick="openLoginModal()" class="left-border"><i class="fas fa-sign-in-alt" aria-hidden="true"></i> Login</a>
+	{% endif %}
+  </div>
+  <a href="javascript:void(0);" class="icon" onclick="myFunction()">&#9776;</a>
+</div>
+</div>
+</div>
+{% block content %}
+<div id="myFakeTopnav">
+</div>
+<div id="everything">
+<div id="wrapper">
+<div id="content">
+</div>
+</div>
+</div>
+{% endblock %}
+<div id="teeest">
+</div>
+<div class="is-hidden">
+<div id="content-buffer">
+</div>	
+{% include 'entities/select_community.html' %}
+{% include 'entities/community_info.html' %}
+{% include 'entities/select_chat.html' %}
+{% include 'entities/chat_window.html' %}
+{% include 'entities/login_modal.html' %}
+</div>
+{% block appcontent %}
+{% endblock %}
+<script>
+$( ".background" ).each(function() {
+  $(this).hide()
+});
+
+$("#background-wrapper").find(":first-child").show();
+$("#background-wrapper").find(":first-child").addClass("on");
+
+setInterval(function(){
+var first = $("#background-wrapper").find(":first-child")
+.fadeOut(1500)
+.next()
+.fadeIn(1500)
+.end()
+.appendTo($("#background-wrapper"))
+}, 8000);
+
+var forceLogin = {{ forceLogin }};
+
+function sendJsonToServer(url, content, callback) {
+	console.log("Sending...")
+	console.log(content);
+		
+	// construct an HTTP request
+	var xhr = new XMLHttpRequest();
+	xhr.open("POST", url, true);
+	xhr.setRequestHeader('Content-Type', 'application/json; charset=UTF-8');
+
+	// send the collected data as JSON
+	if (content != null) {
+		xhr.send(content);
+	} else {
+		xhr.send();
+	}
+
+	xhr.onreadystatechange = function() {
+		if (xhr.readyState == XMLHttpRequest.DONE) {
+			console.log(xhr.responseText);
+			if (callback != null) {
+				callback(xhr.responseText)
+			}
+		}
+	}
+}
+
+function openLoginModal() {
+	
+    var modal = new tingle.modal({
+        closeMethods: [],
+        footer: true
+		});
+		
+
+    modal.addFooterBtn('Entrar', "button-discord button-discord-info pure-button button-discord-modal", function(){
+		$(".tingle-modal--visible .username").prop('disabled', true);
+		$(".tingle-modal--visible .password").prop('disabled', true);
+		var username = $(".tingle-modal--visible .username").val()
+		var password = $(".tingle-modal--visible .password").val()
+		$.post("{{ contentUrl }}api/v1/auth/login", { "login":username, "password":password, "type":"email" } ,function(data) {
+			$(".tingle-modal--visible .username").prop('disabled', false);
+			$(".tingle-modal--visible .password").prop('disabled', false);
+			var obj = JSON.parse(data);
+			
+			if (obj["api:message"] == "OK") {
+				window.location.href = "{{ contentUrl }}app";
+				return;
+			} else {
+				if (obj["api:statuscode"] == 214) {
+					$(".tingle-modal--visible .login-exception").removeClass("is-invisible")
+					$(".tingle-modal--visible .login-exception").text("Senha muito curta! A senha deve ter mais de 6 caracteres e não pode conter espaços!")
+				} else {
+					$(".tingle-modal--visible .login-exception").removeClass("is-invisible")
+					$(".tingle-modal--visible .login-exception").text("Email ou senha inválidos!")
+				}
+				return;
+			}
+        });
+    });
+    modal.addFooterBtn(forceLogin ? 'Voltar a página inicial' : 'Fechar', "button-discord button-discord-info pure-button button-discord-modal-secondary-action", function(){	
+		if (forceLogin) {
+			window.location.href = "{{ contentUrl }}";
+		} else {
+			modal.close();
+		}
+    });
+	
+	var cloned = $(".login-modal").clone()
+	
+    modal.setContent(cloned.html());
+	modal.open();
+	$(".tingle-modal--visible").children().css("width", "350px")
+	$(".tingle-modal--visible .loritta-password").addClass("animated slideInUp")
+}
+
+function applyChanges(obj, classes, delay) {
+	setTimeout(function(){
+		obj.removeClass("is-invisible");
+		obj.addClass("animated " + classes);
+	}, delay);
+}
+
+applyChanges($("#vespertine-logo"), "fadeInDown", 250)
+</script>
+<link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css">
+<link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/grids-responsive-min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.5.2/animate.min.css"></link>
+<link async href="https://fonts.googleapis.com/css?family=Pacifico" rel="stylesheet"> 
+<link rel="stylesheet" href="{{ contentUrl }}assets/css/tingle.min.css"></link>
+<link rel="stylesheet" href="{{ contentUrl }}assets/css/normalize.css"></link>
+<link rel="stylesheet" href="{{ contentUrl }}assets/css/style.css?v1"></link>
+<link rel="stylesheet" href="{{ contentUrl }}assets/css/minecraftia.css"></link>
+<link rel="stylesheet" href="{{ contentUrl }}assets/css/sweaty.css"></link>
+<link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet"> 
+<link href="https://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css" rel="stylesheet" type="text/css" />
+<script defer src="{{ contentUrl }}assets/js/splash-text.js"></script>
+<script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
+<link rel="stylesheet" type="text/css" href="https://csshake.surge.sh/csshake.min.css">
+{% block endbody %}
+{% endblock %}
+</body>
